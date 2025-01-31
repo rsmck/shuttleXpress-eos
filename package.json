@@ -1,0 +1,19 @@
+{
+  "name": "shuttlexpress-eos",
+  "description": "Countour ShuttleXpress Control of ETC Eos",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rsmck/shuttleXpress-eos.git"
+  },
+  "keywords": [],
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/rsmck/shuttleXpress-eos/issues"
+  },
+  "homepage": "https://github.com/rsmck/shuttleXpress-eos",
+  "dependencies": {
+    "node-hid": "^3.1.2",
+    "osc": "^2.4.5",
+  }
+}
