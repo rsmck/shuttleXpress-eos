@@ -82,7 +82,7 @@ function parseState(data) {
     } else if (data[0] < 128) {
         outerJog = data[0];
     }
-    if (outerJog <> outerJogLast) {
+    if (outerJog != outerJogLast) {
         outerJogLast = outerJog;
         execOscJog(outerJog);       
     }
