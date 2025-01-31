@@ -15,10 +15,10 @@ Buttons (from left to right)
 | Button | Standard Function | Press and Hold |
 |---------|------------------|----------------|
 | Button 1 | Intensity | Framing Shutter A |
-| Button 2 | Pan | Framing Shutter A |
-| Button 3 | Tilt | Framing Shutter A |
-| Button 4 | Zoom | Framing Shutter A |
-| Button 5 | 'Shift' | Framing Shutter A |
+| Button 2 | Pan | Framing Shutter B |
+| Button 3 | Tilt | Framing Shutter C |
+| Button 4 | Zoom | Framing Shutter D |
+| Button 5 | | 'Shift' |
 
 In each case holding Shift enables fine adjustment of the Intensity/Pan/Tilt/Zoom parameters
 
