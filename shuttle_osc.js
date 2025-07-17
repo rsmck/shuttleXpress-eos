@@ -106,27 +106,27 @@ function execOscEncoder(dir) {
     // this is messy, as it was adapted to add framing function (not included before)
     if (activeBtns.includes('intens')) {
         if (activeBtns.includes('x')) {
-            strWheelMsg += '/angle a';
+            strWheelMsg += '/frame_angle_a';
         } else {
-            strWheelMsg += '/thrust a';
+            strWheelMsg += '/frame_thrust_a';
         }
     } else if (activeBtns.includes('pan')) {
         if (activeBtns.includes('x')) {
-            strWheelMsg += '/angle b';
+            strWheelMsg += '/frame_angle_b';
         } else {
-            strWheelMsg += '/thrust b';
+            strWheelMsg += '/frame_thrust_b';
         }
     } else if (activeBtns.includes('tilt')) {
         if (activeBtns.includes('x')) {
-            strWheelMsg += '/angle c';
+            strWheelMsg += '/frame_angle_c';
         } else {
-            strWheelMsg += '/thrust c';
+            strWheelMsg += '/frame_thrust_c';
         }
     } else if (activeBtns.includes('zoom')) {
         if (activeBtns.includes('x')) {
-            strWheelMsg += '/angle d';
+            strWheelMsg += '/frame_angle_d';
         } else {
-            strWheelMsg += '/thrust d';
+            strWheelMsg += '/frame_thrust_d';
         }
     } else {
         if (activeBtns.includes('x')) {
