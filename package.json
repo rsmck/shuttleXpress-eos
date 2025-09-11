@@ -13,7 +13,7 @@
   },
   "homepage": "https://github.com/rsmck/shuttleXpress-eos",
   "dependencies": {
-    "node-hid": "^3.1.2",
-    "osc": "^2.4.5",
+    "node-hid": "^3.2.0",
+    "node-osc": "^11.0.0"
   }
 }
