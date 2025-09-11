@@ -2,7 +2,7 @@
 
 This is a pretty much unfinished script that allows you to use the Contour Shuttle Xpress (Now Called Media Controller Xpress)
 
-I've only tested it on macOS but no reason it shouldn't work on Windows either. At some point I'll make this into a friendly application rather than a command-line tool, but given the intended audience I don't imagine you'll have any problems with the command line version. 
+This works on both macOS and Windows, and builds happily to an executable with deno.
 
 Edit these two parameters in the file to point to your Eos console or ETCnomad (by default it will connect to ETCnomad on your local computer)
 ```
