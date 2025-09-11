@@ -1,7 +1,6 @@
 // shuttleXpress OSC controller
-
 const HID = require('node-hid');
-var osc = require("osc");
+const { Client, Server } = require('node-osc');
 
 const EOS_CONSOLE_IP = "127.0.0.1";
 const EOS_CONSOLE_PORT = 8000;
@@ -14,6 +13,8 @@ var outerJog = 0;
 var outerJogLast = 0;
 var strMode = 'intens';
 
+let device = null;
+
 const BUTTON_MAP = {
     0x10: "intens",
     0x20: "pan",
@@ -23,18 +24,20 @@ const BUTTON_MAP = {
 };
 
 // OSC
-var oscUdp = new osc.UDPPort({
-    localAddress: "0.0.0.0",
-    localPort: 57121,
-    metadata: true
-});
-oscUdp.open();
+const oscUdp = new Client(EOS_CONSOLE_IP, EOS_CONSOLE_PORT);
+
+console.log("// ShuttleXpress for Eos");
+console.log("// Ross Henderson ~ ross@rmlx.co.uk");
+console.log("// ");
+console.log("// Set EOS to OSC UDP on Port 8000 (Default)");
+console.log(" ");
+
 
 // connect
 connectShuttle();
 
 function connectShuttle() {
-    console.log("Searching for HID device...");
+    console.log("Searching... ");
 
     const devices = HID.devices();
     const deviceInfo = devices.find(d => d.vendorId === USB_VENDOR_ID);
@@ -83,8 +86,8 @@ function parseState(data) {
         outerJog = data[0];
     }
     if (outerJog != outerJogLast) {
-        outerJogLast = outerJog;
         execOscJog(outerJog);       
+        outerJogLast = outerJog;
     }
 
     // handle the infinite wheel encoder
@@ -137,13 +140,16 @@ function execOscEncoder(dir) {
         strWheelMsg += '/'+strMode;
     }
 
-    oscUdp.send({
-        address: strWheelMsg,
-        args: [{type: "f", value: dir*3}]
-    }, EOS_CONSOLE_IP, EOS_CONSOLE_PORT);
-
+    oscUdp.send(strWheelMsg, dir*3);
 }
 
 function execOscJog(dir) {
-    // don't do anything with this yet
+    if (outerJogLast == 0) { 
+    	if (dir > 0) {
+		oscUdp.send('/eos/key/next');
+    	} else if (dir < 0) {
+		oscUdp.send('/eos/key/last');
+	}    
+     }
+     outerJogLast = dir;
 }
