@@ -33,6 +33,8 @@ const EOS_CONSOLE_PORT = 8000;
 
 const USB_VENDOR_ID = 2867;
 
+const DOUBLE_CLICK_TIME = 250;
+
 var activeBtns = [];
 var lastBtns = [];
 var innerScroll = -1;
@@ -41,11 +43,13 @@ var outerJogLast = 0;
 var strEncOscString = '/eos/wheel/intens/coarse';
 var strMode = '';
 var buttonShift = '';
+var bolStickyShift = false;
 let device = null;
+var lastBtnPress = {};
 
 const BUTTON_MAP = [
   "t1", "t2", "t3", "t4", "t5",
-  "t6", "t7", "t8", "t9", "ul", // upper of the lower two silver buttons (left)
+  "t6", "t7", "t8", "t9", "ul",
   "ur", "ll", "lr", "sl", "sr",
 ];
 
@@ -62,14 +66,14 @@ const CONFIG_BTN_PRO = {
   "t7": [{"mode": "e", "osc": "/eos/wheel/coarse/frame_assembly"}, {"mode": "e", "osc": "/eos/wheel/sat"}, false],
   "t8": [{"mode": "t", "osc": ["/eos/key/highlight", "/eos/key/enter"]}, false, false],
   "t9": [{"mode": "t", "osc": "/eos/key/select_last"}, false, false],
-  "ur": [{"mode": "e", "osc": "/eos/wheel/coarse/edge"}, {"mode": "e", "osc": "/eos/wheel/fine/edge"}],
-  "lr": [{"mode": "e", "osc": "/eos/wheel/coarse/zoom"}, {"mode": "e", "osc": "/eos/wheel/fine/zoom"}],
-  "ul": [{"mode": "e", "osc": "/eos/wheel/coarse/tilt"}, {"mode": "e", "osc": "/eos/wheel/fine/tilt"}],
-  "ll": [{"mode": "e", "osc": "/eos/wheel/coarse/pan"}, {"mode": "e", "osc": "/eos/wheel/fine/pan"}],
-  "sl": [{"mode": "e", "osc": "/eos/wheel/coarse/intens"}, {"mode": "e", "osc": "/eos/wheel/fine/intens"}],
-  "sr": [{"mode": "s"}],
-  "jl": [{"mode": "t", "osc": "/eos/key/last"}],
-  "jr": [{"mode": "t", "osc": "/eos/key/next"}],
+  "ur": [{"mode": "e", "osc": "/eos/wheel/coarse/edge"}, {"mode": "e", "osc": "/eos/wheel/fine/edge"}, false],
+  "lr": [{"mode": "e", "osc": "/eos/wheel/coarse/zoom"}, {"mode": "e", "osc": "/eos/wheel/fine/zoom"}, false],
+  "ul": [{"mode": "e", "osc": "/eos/wheel/coarse/tilt"}, {"mode": "e", "osc": "/eos/wheel/fine/tilt"}, false],
+  "ll": [{"mode": "e", "osc": "/eos/wheel/coarse/pan"}, {"mode": "e", "osc": "/eos/wheel/fine/pan"}, false],
+  "sl": [{"mode": "e", "osc": "/eos/wheel/coarse/intens"}, {"mode": "e", "osc": "/eos/wheel/fine/intens"}, false],
+  "sr": [{"mode": "s"}, false, false],
+  "jl": [{"mode": "t", "osc": "/eos/key/last"}, false, false],
+  "jr": [{"mode": "t", "osc": "/eos/key/next"}, false, false],
 }
 
 // ShuttleXpress
@@ -78,9 +82,9 @@ const CONFIG_BTN_XPRESS = {
   "t6": [{"mode": "e", "osc": "/eos/wheel/pan"}, {"mode": "e", "osc": "/eos/wheel/frame_angle_b"}, {"mode": "e", "osc": "/eos/wheel/frame_thrust_b"}],
   "t7": [{"mode": "e", "osc": "/eos/wheel/tilt"}, {"mode": "e", "osc": "/eos/wheel/frame_angle_c"}, {"mode": "e", "osc": "/eos/wheel/frame_thrust_c"}],
   "t8": [{"mode": "e", "osc": "/eos/wheel/zoom"}, {"mode": "e", "osc": "/eos/wheel/frame_angle_d"}, {"mode": "e", "osc": "/eos/wheel/frame_thrust_d"}],
-  "t9": [{"mode": "s"}],
-  "jl": [{"mode": "t", "osc": "/eos/key/last"}],
-  "jr": [{"mode": "t", "osc": "/eos/key/next"}],
+  "t9": [{"mode": "s"} , false, false],
+  "jl": [{"mode": "t", "osc": "/eos/key/last"}, false, false],
+  "jr": [{"mode": "t", "osc": "/eos/key/next"}, false, false],
 }
 
 // OSC
@@ -144,10 +148,15 @@ function connectShuttle() {
 }
 
 function parseState(data) {
+	// We have the concept of a double click now ... 
+	now = Date.now();
+
     // parse the pressed buttons
     var activeBtns = [];
     
     var bolShiftPressed = false;
+    var bolDoubleClick = false;
+
     var strTempOscString = ''; // ephemeral
     
     var bolLazyShift = true;
@@ -167,12 +176,22 @@ function parseState(data) {
 	
 	// is the 'shift' key held and defined
 	bolShiftPressed = activeBtns.includes(buttonShift);
+	if (bolStickyShift) bolShiftPressed = true;
 	
 	// If a button is pressed, remap or act on it
 	activeBtns.forEach((btn, idx) => {
 		if (CONFIG_BTN[btn] != undefined) {
+			if (lastBtnPress[btn] != undefined && lastBtnPress[btn] > now-DOUBLE_CLICK_TIME) {
+				bolDoubleClick = true;
+			}
+			
 			if (CONFIG_BTN[btn][0].mode == 's') {
 				// this is the 'shift' button, so it can't do anything else
+				if (bolDoubleClick) {
+					bolStickyShift = true;
+				} else {
+					bolStickyShift = false;
+				}
 			} else {
 				let cfg = CONFIG_BTN[btn];
 				if (cfg.length == 3 && bolShiftPressed == true) {
@@ -236,11 +255,8 @@ function parseState(data) {
 	lastBtns.forEach((btn, idx) => {
 		var cfg = CONFIG_BTN[btn];
 		if (!activeBtns.includes(btn) && cfg != undefined && cfg.length > 0) {
-			var strKeyOsc = false
+			lastBtnPress[btn] = now;
 			if (cfg[0].mode == 'k') {
-				strKeyOsc = cfg[0].osc;		
-			}
-			if (strKeyOsc) {
 				oscUdp.send(strKeyOsc, 0);
 			}
 		}
