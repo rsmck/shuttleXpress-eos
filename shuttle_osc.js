@@ -53,13 +53,13 @@ var CONFIG_BTN = {};
 
 // Shuttle PRO 2
 const CONFIG_BTN_PRO = {
-  "t1": [{"mode": "e", "osc": "/eos/wheel/frame_thrust_a"}, {"mode": "e", "osc": "/eos/wheel/frame_angle_a"}, false],
-  "t2": [{"mode": "e", "osc": "/eos/wheel/frame_thrust_b"}, {"mode": "e", "osc": "/eos/wheel/frame_angle_b"}, false],
-  "t3": [{"mode": "e", "osc": "/eos/wheel/frame_thrust_c"}, {"mode": "e", "osc": "/eos/wheel/frame_angle_c"}, false],
-  "t4": [{"mode": "e", "osc": "/eos/wheel/frame_thrust_d"}, {"mode": "e", "osc": "/eos/wheel/frame_angle_d"}, false],
+  "t1": [{"mode": "e", "osc": "/eos/wheel/coarse/frame_thrust_a"}, {"mode": "e", "osc": "/eos/wheel/coarse/frame_angle_a"}, false],
+  "t2": [{"mode": "e", "osc": "/eos/wheel/coarse/frame_thrust_b"}, {"mode": "e", "osc": "/eos/wheel/coarse/frame_angle_b"}, false],
+  "t3": [{"mode": "e", "osc": "/eos/wheel/coarse/frame_thrust_c"}, {"mode": "e", "osc": "/eos/wheel/coarse/frame_angle_c"}, false],
+  "t4": [{"mode": "e", "osc": "/eos/wheel/coarse/frame_thrust_d"}, {"mode": "e", "osc": "/eos/wheel/coarse/frame_angle_d"}, false],
   "t5": [{"mode": "e", "osc": "/eos/wheel/coarse/hue"}, {"mode": "e", "osc": "/eos/wheel/fine/hue"}, false],
   "t6": [{"mode": "e", "osc": "/eos/wheel/coarse/saturation"}, {"mode": "e", "osc": "/eos/wheel/fine/saturation"}, false],
-  "t7": [{"mode": "e", "osc": "/eos/wheel/frame_assembly"}, {"mode": "e", "osc": "/eos/wheel/sat"}, false],
+  "t7": [{"mode": "e", "osc": "/eos/wheel/coarse/frame_assembly"}, {"mode": "e", "osc": "/eos/wheel/sat"}, false],
   "t8": [{"mode": "t", "osc": ["/eos/key/highlight", "/eos/key/enter"]}, false, false],
   "t9": [{"mode": "t", "osc": "/eos/key/select_last"}, false, false],
   "ur": [{"mode": "e", "osc": "/eos/wheel/coarse/edge"}, {"mode": "e", "osc": "/eos/wheel/fine/edge"}],
@@ -81,14 +81,6 @@ const CONFIG_BTN_XPRESS = {
   "t9": [{"mode": "s"}],
   "jl": [{"mode": "t", "osc": "/eos/key/last"}],
   "jr": [{"mode": "t", "osc": "/eos/key/next"}],
-}
-
-// find the shift if there is one 
-for (var i in CONFIG_BTN) {
-	if (CONFIG_BTN[i][0].mode == 's') {
-		buttonShift = i;
-		break;
-	}
 }
 
 // OSC
@@ -126,6 +118,14 @@ function connectShuttle() {
 	        console.log("Connected to ShuttlePRO2...");
        	}
 
+		// find the shift if there is one 
+		for (var i in CONFIG_BTN) {
+			if (CONFIG_BTN[i][0].mode == 's') {
+				buttonShift = i;
+				break;
+			}
+		}
+
         device.on("data", (data) => {
             parseState(data);
         });
@@ -149,6 +149,8 @@ function parseState(data) {
     
     var bolShiftPressed = false;
     var strTempOscString = ''; // ephemeral
+    
+    var bolLazyShift = true;
     
 	const low = data[data.length - 2];  // second to last byte
 	const high = data[data.length - 1]; // last byte
@@ -179,6 +181,7 @@ function parseState(data) {
 					// with that in the position for shift and continue as 
 					// normal...
 					if (cfg[2]) cfg[0] = cfg[2];
+					bolLazyShift = false;
 				}
 				
 				// now handle the button as usual
@@ -248,6 +251,13 @@ function parseState(data) {
 	
 	// if we don't have an override, use the currently active one 
 	if (strTempOscString == '') strTempOscString = strEncOscString;
+	
+	// if the shift key was pressed, and we don't have a defined 
+	// function for it, treat it as a 'fine' rather than coarse
+	// attribute in the most primitive way possible
+	if (bolShiftPressed && bolLazyShift) {
+		strTempOscString = strTempOscString.replace("/coarse","/fine");
+	}
     
     // jog dial
     if (data[0] > 128) {
